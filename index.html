@@ -1,0 +1,218 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Smart AC Controller Pro</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+<style>
+:root{ --bg:#f4f7fa; --card:#ffffff; --primary:#4f46e5; --ok:#16a34a; --danger:#ef4444; }
+body{ font-family: 'Segoe UI', sans-serif; background: var(--bg); margin:0; padding:12px; }
+
+/* Header Section */
+.header{ display:flex; justify-content:space-between; align-items:center; background:var(--card); padding:12px; border-radius:15px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+.temp-box{ text-align:center; flex:1; cursor:pointer; }
+#clock{ font-size: 14px; font-weight: bold; color: #64748b; margin-top: 2px; }
+.indicator{ padding:6px 10px; border-radius:12px; font-size:10px; font-weight:bold; width: 65px; text-align: center; }
+.ind-run{ background:#dcfce7; color:#166534; border: 1px solid #16a34a; }
+.ind-stop{ background:#fee2e2; color:#991b1b; border: 1px solid #ef4444; }
+
+/* Cards & Accordion */
+.card{ background:var(--card); border-radius:12px; margin-bottom:8px; border: 1px solid #e2e8f0; overflow: hidden; }
+.card-header{ padding:15px; font-weight:bold; display:flex; justify-content:space-between; cursor:pointer; background: #fff; }
+.card-body{ display:none; padding:15px; border-top: 1px solid #f1f5f9; background: #fafbfc; }
+.active-tag{ color: var(--ok); font-size: 11px; font-weight: bold; }
+
+/* Controls */
+.btn-row{ display: flex; gap: 8px; }
+button{ width:100%; padding:12px; border-radius:10px; border:none; font-weight:bold; cursor:pointer; font-size: 13px; transition: 0.2s; }
+.btn-blue{ background:var(--primary); color:#fff; }
+.btn-green{ background:var(--ok); color:#fff; }
+.btn-del{ background:#f1f5f9; color:red; width: auto; padding: 5px 10px; font-size: 11px; }
+input[type="number"], input[type="time"] { padding: 5px; border-radius: 6px; border: 1px solid #cbd5e1; }
+
+/* Weekly Slot Style */
+.slot{ background:#fff; border:1px solid #e2e8f0; padding:12px; border-radius:10px; margin-bottom:10px; border-left: 4px solid var(--primary); }
+.dayBtn{ padding:4px 7px; border:1px solid #e2e8f0; border-radius:5px; font-size:10px; margin:1px; display:inline-block; cursor:pointer; }
+.dayBtn.active{ background:var(--primary); color:#fff; }
+.ac-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+ <div id="ac1_ui" class="indicator ind-stop">AC-1 OFF</div>
+ <div class="temp-box" onclick="askSetTemp()">
+    <div style="font-size:24px; font-weight:900;"><span id="liveT">--</span>°C</div>
+    <div id="clock">00:00:00</div>
+    <small style="color: #64748b;">Set Limit: <span id="setT">--</span>°C</small>
+ </div>
+ <div id="ac2_ui" class="indicator ind-stop">AC-2 OFF</div>
+</div>
+
+<div class="card" id="card-manual">
+ <div class="card-header" onclick="openCard('manual')">Manual Override <span id="tag-manual" class="active-tag" style="display:none;">● Active</span></div>
+ <div class="card-body">
+  <div class="btn-row">
+    <button class="btn-blue" onclick="manualAction(1)">AC-1 ON/OFF</button>
+    <button class="btn-blue" onclick="manualAction(2)">AC-2 ON/OFF</button>
+  </div>
+ </div>
+</div>
+
+<div class="card" id="card-interval">
+ <div class="card-header" onclick="openCard('interval')">Interval Cycling <span id="tag-interval" class="active-tag" style="display:none;">● Active</span></div>
+ <div class="card-body">
+  <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+    <div>ON: <input id="onM" type="number" value="5" style="width:45px"> min</div>
+    <div>OFF: <input id="offM" type="number" value="5" style="width:45px"> min</div>
+  </div>
+  <button class="btn-green" onclick="runInterval()">START INTERVAL</button>
+ </div>
+</div>
+
+<div class="card" id="card-weekly">
+ <div class="card-header" onclick="openCard('weekly')">Weekly Schedule <span id="tag-weekly" class="active-tag" style="display:none;">● Active</span></div>
+ <div class="card-body">
+  <div id="slotList"></div>
+  <button class="btn-blue" style="background:#64748b; margin-bottom: 10px;" onclick="addNewSlot()">+ ADD NEW SLOT</button>
+  <button class="btn-green" onclick="saveAndRunWeekly()">SAVE & ACTIVATE</button>
+ </div>
+</div>
+
+<script>
+// --- FIREBASE CONFIG ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBrNdBbIif-R1Zovb5-jMLogZEjxwA7x-k",
+  databaseURL: "https://smart-controller-1b17c-default-rtdb.firebaseio.com/"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let currentMode = "";
+let weeklyData = JSON.parse(localStorage.getItem('mySlots') || '[]');
+
+// --- 1. CLOCK ---
+setInterval(() => {
+  document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+}, 1000);
+
+// --- 2. ACCORDION ---
+function openCard(modeName) {
+  const bodies = document.querySelectorAll('.card-body');
+  const target = document.querySelector(`#card-${modeName} .card-body`);
+  const isVisible = target.style.display === 'block';
+  bodies.forEach(b => b.style.display = 'none');
+  target.style.display = isVisible ? 'none' : 'block';
+}
+
+// --- 3. FIREBASE SYNC ---
+db.ref().on('value', snap => {
+  const d = snap.val();
+  if(!d) return;
+  document.getElementById('liveT').innerText = d.liveTemp || "--";
+  document.getElementById('setT').innerText = d.setTemp || "--";
+  updateInd('ac1_ui', d.ac1 === 1, 'AC-1');
+  updateInd('ac2_ui', d.ac2 === 1, 'AC-2');
+  currentMode = d.mode;
+  ['manual','interval','weekly'].forEach(m => {
+    document.getElementById('tag-'+m).style.display = (d.mode===m?'inline':'none');
+  });
+});
+
+function updateInd(id, on, label) {
+  const el = document.getElementById(id);
+  el.className = 'indicator ' + (on ? 'ind-run' : 'ind-stop');
+  el.innerText = label + (on ? ' ON' : ' OFF');
+}
+
+function askSetTemp() {
+  let val = prompt("Enter Max Temperature Limit:", "30");
+  if(val) db.ref('setTemp').set(parseFloat(val));
+}
+
+// --- 4. MODES LOGIC ---
+function manualAction(ac) {
+  db.ref('mode').set('manual');
+  db.ref('ac'+ac).once('value', s => db.ref('ac'+ac).set(s.val()===1?0:1));
+}
+
+function runInterval() {
+  db.ref('mode').set('interval');
+  // Logic is mainly handled by ESP32 for safety
+  alert("Interval Mode Activated");
+}
+
+// --- 5. WEEKLY SLOTS ---
+function addNewSlot() {
+  weeklyData.push({
+    id: Date.now(), 
+    days: [false,false,false,false,false,false,false], 
+    a1on: '08:00', a1off: '09:00',
+    a2on: '10:00', a2off: '11:00'
+  });
+  renderWeekly();
+}
+
+function renderWeekly() {
+  const list = document.getElementById('slotList');
+  list.innerHTML = weeklyData.map(s => `
+    <div class="slot">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div>${['M','T','W','T','F','S','S'].map((d,i)=>`<span class="dayBtn ${s.days[i]?'active':''}" onclick="toggleDay(${s.id},${i})">${d}</span>`).join('')}</div>
+        <button class="btn-del" onclick="delSlot(${s.id})">Delete</button>
+      </div>
+      <div class="ac-row">
+        <b>AC-1</b>
+        <span>ON: <input type="time" value="${s.a1on}" onchange="updateTime(${s.id},'a1on',this.value)"></span>
+        <span>OFF: <input type="time" value="${s.a1off}" onchange="updateTime(${s.id},'a1off',this.value)"></span>
+      </div>
+      <div class="ac-row">
+        <b>AC-2</b>
+        <span>ON: <input type="time" value="${s.a2on}" onchange="updateTime(${s.id},'a2on',this.value)"></span>
+        <span>OFF: <input type="time" value="${s.a2off}" onchange="updateTime(${s.id},'a2off',this.value)"></span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleDay(id,idx){ 
+  let s=weeklyData.find(x=>x.id===id); s.days[idx]=!s.days[idx]; renderWeekly(); 
+}
+function updateTime(id,k,v){ 
+  weeklyData.find(x=>x.id===id)[k]=v; 
+}
+function delSlot(id){ 
+  weeklyData=weeklyData.filter(x=>x.id!==id); renderWeekly(); 
+}
+
+function saveAndRunWeekly() {
+  localStorage.setItem('mySlots', JSON.stringify(weeklyData));
+  db.ref('mode').set('weekly');
+  alert("Schedule Saved & Activated!");
+}
+
+// Weekly browser check loop (optional fallback)
+setInterval(() => {
+  if(currentMode !== 'weekly') return;
+  const now = new Date();
+  const d = (now.getDay() + 6) % 7;
+  const t = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+  let ac1_state = 0;
+  let ac2_state = 0;
+  weeklyData.forEach(s => {
+    if(s.days[d]) {
+      if(t >= s.a1on && t < s.a1off) ac1_state = 1;
+      if(t >= s.a2on && t < s.a2off) ac2_state = 1;
+    }
+  });
+  db.ref('ac1').set(ac1_state);
+  db.ref('ac2').set(ac2_state);
+}, 10000);
+
+renderWeekly();
+</script>
+</body>
+</html>
