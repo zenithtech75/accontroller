@@ -2,217 +2,182 @@
 <html>
 <head>
 <meta charset="utf-8"/>
-<title>Smart AC Controller Pro</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+<title>AC Controller Pro V.2.5</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" /> <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
 
 <style>
-:root{ --bg:#f4f7fa; --card:#ffffff; --primary:#4f46e5; --ok:#16a34a; --danger:#ef4444; }
-body{ font-family: 'Segoe UI', sans-serif; background: var(--bg); margin:0; padding:12px; }
+/* CSS: આખા પેજની ડિઝાઈન અને કલર અહીં સેટ થાય છે */
+:root{ --bg:#eef2f7; --card:#ffffff; --primary:#4f46e5; --ok:#10b981; --danger:#ef4444; --accent:#f59e0b; }
 
-/* Header Section */
-.header{ display:flex; justify-content:space-between; align-items:center; background:var(--card); padding:12px; border-radius:15px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
-.temp-box{ text-align:center; flex:1; cursor:pointer; }
-#clock{ font-size: 14px; font-weight: bold; color: #64748b; margin-top: 2px; }
-.indicator{ padding:6px 10px; border-radius:12px; font-size:10px; font-weight:bold; width: 65px; text-align: center; }
-.ind-run{ background:#dcfce7; color:#166534; border: 1px solid #16a34a; }
-.ind-stop{ background:#fee2e2; color:#991b1b; border: 1px solid #ef4444; }
+body{ font-family: 'Segoe UI', sans-serif; background: var(--bg); margin:0; padding:10px; }
 
-/* Cards & Accordion */
-.card{ background:var(--card); border-radius:12px; margin-bottom:8px; border: 1px solid #e2e8f0; overflow: hidden; }
-.card-header{ padding:15px; font-weight:bold; display:flex; justify-content:space-between; cursor:pointer; background: #fff; }
-.card-body{ display:none; padding:15px; border-top: 1px solid #f1f5f9; background: #fafbfc; }
-.active-tag{ color: var(--ok); font-size: 11px; font-weight: bold; }
+/* ટોચની ઘડિયાળની પટ્ટી */
+.top-clock-bar { text-align: center; padding: 5px; background: #1e293b; color: #fbbf24; border-radius: 10px 10px 0 0; font-weight: bold; font-size: 20px; letter-spacing: 1px; }
 
-/* Controls */
-.btn-row{ display: flex; gap: 8px; }
-button{ width:100%; padding:12px; border-radius:10px; border:none; font-weight:bold; cursor:pointer; font-size: 13px; transition: 0.2s; }
-.btn-blue{ background:var(--primary); color:#fff; }
-.btn-green{ background:var(--ok); color:#fff; }
-.btn-del{ background:#f1f5f9; color:red; width: auto; padding: 5px 10px; font-size: 11px; }
-input[type="number"], input[type="time"] { padding: 5px; border-radius: 6px; border: 1px solid #cbd5e1; }
+/* હેડર વિભાગ (AC સ્ટેટસ અને તાપમાન માટે) */
+.header{ display:flex; justify-content:space-between; align-items:center; background: linear-gradient(135deg, #334155, #475569); color:white; padding:15px; border-radius: 0 0 15px 15px; margin-bottom:12px; }
 
-/* Weekly Slot Style */
-.slot{ background:#fff; border:1px solid #e2e8f0; padding:12px; border-radius:10px; margin-bottom:10px; border-left: 4px solid var(--primary); }
-.dayBtn{ padding:4px 7px; border:1px solid #e2e8f0; border-radius:5px; font-size:10px; margin:1px; display:inline-block; cursor:pointer; }
-.dayBtn.active{ background:var(--primary); color:#fff; }
-.ac-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 12px; }
+/* તાપમાન નું બોક્સ */
+.temp-box{ text-align:center; flex:1; }
+
+/* ઓનલાઈન/ઓફલાઈન સ્ટેટસ નું લખાણ */
+#online-status { font-size: 10px; font-weight: bold; margin-top: 3px; }
+.status-online { color: #34d399; }
+.status-offline { color: #f87171; }
+
+/* AC ના ઇન્ડિકેટર (ON/OFF ના નાના બોક્સ) */
+.indicator{ padding:8px 5px; border-radius:10px; font-size:11px; font-weight:bold; width: 62px; text-align: center; border: 1px solid rgba(255,255,255,0.3); }
+.ind-run{ background:#065f46; color:#a7f3d0; border-color:#34d399; } /* ચાલુ હોય ત્યારે લીલો કલર */
+.ind-stop{ background:#991b1b; color:#fecaca; border-color:#f87171; } /* બંધ હોય ત્યારે લાલ કલર */
+
+/* કાર્ડ અને બટન ની ડિઝાઇન */
+.card { background:var(--card); border-radius:12px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow:hidden; }
+.card-header { padding:15px; font-weight:bold; display:flex; justify-content:space-between; cursor:pointer; font-size:15px; }
+.card-body { display:none; padding:15px; } /* શરૂઆતમાં બટનો છુપાયેલા રહેશે */
+
+/* બટન રો (એક લાઈનમાં બે બટન) */
+.btn-row { display:flex; gap:8px; margin-top:5px; }
+button { flex:1; padding:12px; border-radius:8px; border:none; font-weight:bold; cursor:pointer; font-size:13px; }
+.btn-blue { background:#3b82f6; color:white; }
+.btn-purple { background:#a855f7; color:white; }
+.btn-green { background:#10b981; color:white; }
+.btn-orange { background:#f59e0b; color:white; }
+
+/* વીકલી ટાઈમર સ્લોટ ની ડિઝાઇન */
+.slot { background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:10px; margin-bottom:8px; }
+.dayBtn { padding:4px 7px; border:1px solid #cbd5e1; border-radius:5px; font-size:10px; margin-right:2px; cursor:pointer; background:white; }
+.dayBtn.active { background:var(--accent); color:white; border-color:var(--accent); }
 </style>
 </head>
 <body>
 
+<div class="top-clock-bar" id="live-clock">12:00:00 AM</div>
+
 <div class="header">
- <div id="ac1_ui" class="indicator ind-stop">AC-1 OFF</div>
+ <div id="ac1_ui" class="indicator ind-stop">AC1 OFF</div>
+ 
  <div class="temp-box" onclick="askSetTemp()">
-    <div style="font-size:24px; font-weight:900;"><span id="liveT">--</span>°C</div>
-    <div id="clock">00:00:00</div>
-    <small style="color: #64748b;">Set Limit: <span id="setT">--</span>°C</small>
+    <div id="liveT_container" style="font-size:36px; font-weight:900;"><span id="liveT">--</span>°C</div>
+    <div id="online-status" class="status-offline">● DISCONNECTED</div>
+    <small style="opacity:0.8;">Limit: <span id="setT">--</span>°C</small>
  </div>
- <div id="ac2_ui" class="indicator ind-stop">AC-2 OFF</div>
+ 
+ <div id="ac2_ui" class="indicator ind-stop">AC2 OFF</div>
 </div>
 
 <div class="card" id="card-manual">
- <div class="card-header" onclick="openCard('manual')">Manual Override <span id="tag-manual" class="active-tag" style="display:none;">● Active</span></div>
+ <div class="card-header" onclick="openCard('manual')">Manual Override <span id="tag-manual" class="active-badge" style="display:none;">LIVE</span></div>
  <div class="card-body">
-  <div class="btn-row">
-    <button class="btn-blue" onclick="manualAction(1)">AC-1 ON/OFF</button>
-    <button class="btn-blue" onclick="manualAction(2)">AC-2 ON/OFF</button>
-  </div>
+    <div class="btn-row">
+        <button class="btn-blue" onclick="manualAction(1)">AC1 ON/OFF</button>
+        <button class="btn-blue" onclick="manualAction(2)">AC2 ON/OFF</button>
+    </div>
  </div>
 </div>
 
 <div class="card" id="card-interval">
- <div class="card-header" onclick="openCard('interval')">Interval Cycling <span id="tag-interval" class="active-tag" style="display:none;">● Active</span></div>
+ <div class="card-header" onclick="openCard('interval')">Interval Mode <span id="tag-interval" class="active-badge" style="display:none;">LIVE</span></div>
  <div class="card-body">
-  <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-    <div>ON: <input id="onM" type="number" value="5" style="width:45px"> min</div>
-    <div>OFF: <input id="offM" type="number" value="5" style="width:45px"> min</div>
-  </div>
-  <button class="btn-green" onclick="runInterval()">START INTERVAL</button>
+    <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px;">
+        <span>AC1 Mins: <input id="onM" type="number" value="1"></span>
+        <span>AC2 Mins: <input id="offM" type="number" value="1"></span>
+    </div>
+    <button class="btn-purple" onclick="runInterval()">START INTERVAL CYCLE</button>
  </div>
 </div>
 
 <div class="card" id="card-weekly">
- <div class="card-header" onclick="openCard('weekly')">Weekly Schedule <span id="tag-weekly" class="active-tag" style="display:none;">● Active</span></div>
+ <div class="card-header" onclick="openCard('weekly')">Weekly Timer <span id="tag-weekly" class="active-badge" style="display:none;">LIVE</span></div>
  <div class="card-body">
-  <div id="slotList"></div>
-  <button class="btn-blue" style="background:#64748b; margin-bottom: 10px;" onclick="addNewSlot()">+ ADD NEW SLOT</button>
-  <button class="btn-green" onclick="saveAndRunWeekly()">SAVE & ACTIVATE</button>
+    <div id="slotList"></div>
+    <div class="btn-row">
+        <button class="btn-orange" onclick="addNewSlot()">+ ADD SLOT</button>
+        <button class="btn-green" onclick="saveWeekly()">SAVE & ACTIVATE</button>
+    </div>
  </div>
 </div>
 
 <script>
-// --- FIREBASE CONFIG ---
-const firebaseConfig = {
-  apiKey: "AIzaSyBrNdBbIif-R1Zovb5-jMLogZEjxwA7x-k",
-  databaseURL: "https://smart-controller-1b17c-default-rtdb.firebaseio.com/"
-};
+/* JAVASCRIPT: અહીં આખા પેજનું લોજિક (મગજ) છે */
+
+// Firebase કનેક્શન સેટિંગ્સ
+const firebaseConfig = { apiKey: "AIzaSyBrNdBbIif-R1Zovb5-jMLogZEjxwA7x-k", databaseURL: "https://smart-controller-1b17c-default-rtdb.firebaseio.com" };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+let weeklyData = JSON.parse(localStorage.getItem('mySlots') || '[]'); // મોબાઈલ મેમરી માંથી સેવ કરેલો ટાઈમ લેવો
 
-let currentMode = "";
-let weeklyData = JSON.parse(localStorage.getItem('mySlots') || '[]');
+// ૧. AM/PM ઘડિયાળ ફંક્શન
+function updateClock() {
+    const now = new Date();
+    let hours = now.getHours();
+    let ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12; // ૧૨ કલાક ના ફોર્મેટ માં ફેરવવું
+    let minutes = now.getMinutes().toString().padStart(2, '0');
+    let seconds = now.getSeconds().toString().padStart(2, '0');
+    document.getElementById('live-clock').innerText = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
+}
+setInterval(updateClock, 1000); // દર ૧ સેકન્ડે ઘડિયાળ અપડેટ કરવી
 
-// --- 1. CLOCK ---
-setInterval(() => {
-  document.getElementById('clock').innerText = new Date().toLocaleTimeString();
-}, 1000);
-
-// --- 2. ACCORDION ---
-function openCard(modeName) {
-  const bodies = document.querySelectorAll('.card-body');
-  const target = document.querySelector(`#card-${modeName} .card-body`);
-  const isVisible = target.style.display === 'block';
-  bodies.forEach(b => b.style.display = 'none');
-  target.style.display = isVisible ? 'none' : 'block';
+// ૨. કાર્ડ ખોલવા/બંધ કરવા માટેનું ફંક્શન
+function openCard(m){ 
+    document.querySelectorAll('.card-body').forEach(b=>b.style.display='none'); 
+    document.querySelector(`#card-${m} .card-body`).style.display='block'; 
 }
 
-// --- 3. FIREBASE SYNC ---
+// ૩. ઓફલાઈન ચેક કરવા માટેનું લોજિક (Heartbeat monitor)
+setInterval(() => {
+    db.ref('lastSeen').once('value', snap => {
+        const diff = (Date.now() - snap.val()) / 1000;
+        const s = document.getElementById('online-status');
+        if (diff > 8) { // જો ૮ સેકન્ડ સુધી ESP32 નો જવાબ ન હોય તો
+            s.innerText = "● DISCONNECTED"; s.className = "status-offline"; 
+            document.getElementById('liveT').innerText = "--"; 
+        }
+        else { s.innerText = "● CONNECTED"; s.className = "status-online"; }
+    });
+}, 3000);
+
+// ૪. Firebase માંથી લાઈવ ડેટા વાંચવો (તાપમાન અને AC સ્ટેટસ)
 db.ref().on('value', snap => {
-  const d = snap.val();
-  if(!d) return;
-  document.getElementById('liveT').innerText = d.liveTemp || "--";
-  document.getElementById('setT').innerText = d.setTemp || "--";
-  updateInd('ac1_ui', d.ac1 === 1, 'AC-1');
-  updateInd('ac2_ui', d.ac2 === 1, 'AC-2');
-  currentMode = d.mode;
-  ['manual','interval','weekly'].forEach(m => {
-    document.getElementById('tag-'+m).style.display = (d.mode===m?'inline':'none');
-  });
+    const d = snap.val(); if(!d) return;
+    document.getElementById('liveT').innerText = d.liveTemp === "ERR" ? "ERR" : (d.liveTemp || "--");
+    document.getElementById('setT').innerText = d.setTemp || "--";
+    
+    // AC-1 અને AC-2 ના કલર બદલવા
+    document.getElementById('ac1_ui').className = 'indicator ' + (d.ac1 === 1 ? 'ind-run' : 'ind-stop');
+    document.getElementById('ac1_ui').innerText = 'AC1 ' + (d.ac1 === 1 ? 'ON' : 'OFF');
+    document.getElementById('ac2_ui').className = 'indicator ' + (d.ac2 === 1 ? 'ind-run' : 'ind-stop');
+    document.getElementById('ac2_ui').innerText = 'AC2 ' + (d.ac2 === 1 ? 'ON' : 'OFF');
+    
+    // કયો મોડ ચાલુ છે તેનું ટૅગ (LIVE) બતાવવું
+    ['manual','interval','weekly'].forEach(m => document.getElementById('tag-'+m).style.display = (d.mode===m?'inline-block':'none'));
 });
 
-function updateInd(id, on, label) {
-  const el = document.getElementById(id);
-  el.className = 'indicator ' + (on ? 'ind-run' : 'ind-stop');
-  el.innerText = label + (on ? ' ON' : ' OFF');
-}
+// ૫. બટન દબાવવાથી થતી ક્રિયાઓ (Manual & Interval)
+function manualAction(ac){ db.ref('mode').set('manual'); db.ref('ac'+ac).once('value', s => db.ref('ac'+ac).set(s.val()===1?0:1)); }
+function runInterval(){ db.ref().update({mode:'interval', int_ac1:parseInt(document.getElementById('onM').value), int_ac2:parseInt(document.getElementById('offM').value)}); }
+function askSetTemp(){ let v=prompt("Limit:", "30"); if(v) db.ref('setTemp').set(parseFloat(v)); }
 
-function askSetTemp() {
-  let val = prompt("Enter Max Temperature Limit:", "30");
-  if(val) db.ref('setTemp').set(parseFloat(val));
-}
-
-// --- 4. MODES LOGIC ---
-function manualAction(ac) {
-  db.ref('mode').set('manual');
-  db.ref('ac'+ac).once('value', s => db.ref('ac'+ac).set(s.val()===1?0:1));
-}
-
-function runInterval() {
-  db.ref('mode').set('interval');
-  // Logic is mainly handled by ESP32 for safety
-  alert("Interval Mode Activated");
-}
-
-// --- 5. WEEKLY SLOTS ---
-function addNewSlot() {
-  weeklyData.push({
-    id: Date.now(), 
-    days: [false,false,false,false,false,false,false], 
-    a1on: '08:00', a1off: '09:00',
-    a2on: '10:00', a2off: '11:00'
-  });
-  renderWeekly();
-}
-
-function renderWeekly() {
-  const list = document.getElementById('slotList');
-  list.innerHTML = weeklyData.map(s => `
+// ૬. વીકલી ટાઈમર સેટિંગ્સ
+function addNewSlot(){ weeklyData.push({id:Date.now(), days:[false,false,false,false,false,false,false], a1on:'08:00', a1off:'09:00', a2on:'10:00', a2off:'11:00'}); renderWeekly(); }
+function renderWeekly(){
+    document.getElementById('slotList').innerHTML = weeklyData.map(s => `
     <div class="slot">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <div>${['M','T','W','T','F','S','S'].map((d,i)=>`<span class="dayBtn ${s.days[i]?'active':''}" onclick="toggleDay(${s.id},${i})">${d}</span>`).join('')}</div>
-        <button class="btn-del" onclick="delSlot(${s.id})">Delete</button>
-      </div>
-      <div class="ac-row">
-        <b>AC-1</b>
-        <span>ON: <input type="time" value="${s.a1on}" onchange="updateTime(${s.id},'a1on',this.value)"></span>
-        <span>OFF: <input type="time" value="${s.a1off}" onchange="updateTime(${s.id},'a1off',this.value)"></span>
-      </div>
-      <div class="ac-row">
-        <b>AC-2</b>
-        <span>ON: <input type="time" value="${s.a2on}" onchange="updateTime(${s.id},'a2on',this.value)"></span>
-        <span>OFF: <input type="time" value="${s.a2off}" onchange="updateTime(${s.id},'a2off',this.value)"></span>
-      </div>
-    </div>
-  `).join('');
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <div>${['M','T','W','T','F','S','S'].map((d,i)=>`<span class="dayBtn ${s.days[i]?'active':''}" onclick="toggleDay(${s.id},${i})">${d}</span>`).join('')}</div>
+            <span style="color:red; cursor:pointer; font-weight:bold;" onclick="delSlot(${s.id})">×</span>
+        </div>
+        <div style="font-size:11px; display:flex; justify-content:space-between; margin-top:5px;">AC1: <input type="time" value="${s.a1on}" onchange="updateTime(${s.id},'a1on',this.value)"> to <input type="time" value="${s.a1off}" onchange="updateTime(${s.id},'a1off',this.value)"></div>
+        <div style="font-size:11px; display:flex; justify-content:space-between; margin-top:5px;">AC2: <input type="time" value="${s.a2on}" onchange="updateTime(${s.id},'a2on',this.value)"> to <input type="time" value="${s.a2off}" onchange="updateTime(${s.id},'a2off',this.value)"></div>
+    </div>`).join('');
 }
+function toggleDay(id,idx){ let s=weeklyData.find(x=>x.id===id); s.days[idx]=!s.days[idx]; renderWeekly(); }
+function updateTime(id,k,v){ weeklyData.find(x=>x.id===id)[k]=v; }
+function delSlot(id){ weeklyData = weeklyData.filter(x=>x.id!==id); renderWeekly(); }
+function saveWeekly(){ localStorage.setItem('mySlots', JSON.stringify(weeklyData)); db.ref('mode').set('weekly'); db.ref('weeklySlots').set(weeklyData); }
 
-function toggleDay(id,idx){ 
-  let s=weeklyData.find(x=>x.id===id); s.days[idx]=!s.days[idx]; renderWeekly(); 
-}
-function updateTime(id,k,v){ 
-  weeklyData.find(x=>x.id===id)[k]=v; 
-}
-function delSlot(id){ 
-  weeklyData=weeklyData.filter(x=>x.id!==id); renderWeekly(); 
-}
-
-function saveAndRunWeekly() {
-  localStorage.setItem('mySlots', JSON.stringify(weeklyData));
-  db.ref('mode').set('weekly');
-  alert("Schedule Saved & Activated!");
-}
-
-// Weekly browser check loop (optional fallback)
-setInterval(() => {
-  if(currentMode !== 'weekly') return;
-  const now = new Date();
-  const d = (now.getDay() + 6) % 7;
-  const t = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
-  let ac1_state = 0;
-  let ac2_state = 0;
-  weeklyData.forEach(s => {
-    if(s.days[d]) {
-      if(t >= s.a1on && t < s.a1off) ac1_state = 1;
-      if(t >= s.a2on && t < s.a2off) ac2_state = 1;
-    }
-  });
-  db.ref('ac1').set(ac1_state);
-  db.ref('ac2').set(ac2_state);
-}, 10000);
-
-renderWeekly();
+renderWeekly(); updateClock();
 </script>
 </body>
 </html>
