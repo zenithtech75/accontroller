@@ -1,18 +1,14 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8"/><title>ESP8266-DHT11-Full Sync</title>
+<meta charset="utf-8"/><title>AC Pro V6.3 - Fully Fixed</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
 <style>
 :root{ --bg:#eef2f7; --card:#ffffff; --primary:#4f46e5; --ok:#10b981; --danger:#ef4444; --accent:#f59e0b; }
 body{ font-family: 'Segoe UI', sans-serif; background: var(--bg); margin:0; padding:10px; }
-
-/* Status Bar */
 .top-status-bar { display: flex; justify-content: space-between; align-items: center; background: #1e293b; color: white; padding: 10px 15px; border-radius: 12px; margin-bottom: 10px; font-weight: bold; }
-
-/* Temperature Display */
 .main-display { display: flex; justify-content: space-between; align-items: center; background: #334155; color: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; }
 .temp-center { text-align: center; flex: 1; cursor: pointer; }
 .temp-text { font-size: 42px; font-weight: bold; color: #fbbf24; line-height: 1; }
@@ -24,31 +20,26 @@ body{ font-family: 'Segoe UI', sans-serif; background: var(--bg); margin:0; padd
 
 #sensor-status { color: #ff4444; font-size: 12px; font-weight: bold; display: none; text-align: center; background: #ffebeb; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ffcccc; }
 
-/* Popup Modal */
-#temp-modal { display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index: 1000; text-align: center; border: 2px solid var(--primary); width: 220px; }
-#temp-modal input { width: 80%; padding: 10px; font-size: 24px; text-align: center; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px; }
-.overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; }
-
-/* Cards */
 .card { background:var(--card); border-radius:12px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; overflow:hidden; }
-.card-header { padding:12px 15px; font-weight:bold; cursor:pointer; background: #f8fafc; display: flex; justify-content: space-between; }
+.card-header { padding:12px 15px; font-weight:bold; cursor:pointer; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; }
 .card-body { display:none; padding:15px; border-top:1px solid #eee; }
 
-/* Schedule Slots */
-.slot { background:#f1f5f9; border:1px solid #e2e8f0; padding:12px; border-radius:12px; margin-bottom:10px; }
-.ac-row { background: white; padding: 10px; border-radius: 8px; margin-top: 8px; border: 1px solid #e2e8f0; }
-.ac-label-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; margin-bottom: 8px; padding-bottom: 3px; }
-.remove-btn { color: #ef4444; cursor: pointer; font-size: 11px; font-weight: bold; border: 1px solid #f87171; padding: 2px 8px; border-radius: 4px; }
+/* Active Label Right Side */
+.active-label { background: var(--ok); color: white; font-size: 10px; padding: 2px 8px; border-radius: 4px; visibility: hidden; }
+.active-label.show { visibility: visible; }
 
-.dayBtn { padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 10px; margin-right: 2px; cursor: pointer; background: white; display: inline-block; margin-top: 5px; }
+.slot { background:#f1f5f9; border:1px solid #e2e8f0; padding:12px; border-radius:12px; margin-bottom:10px; }
+.ac-row { background: white; padding: 8px; border-radius: 8px; margin-top: 5px; border: 1px solid #ddd; }
+.dayBtn { padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 10px; margin-right: 2px; cursor: pointer; background: white; display: inline-block; margin-top: 5px; }
 .dayBtn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
+#temp-modal { display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index: 1000; text-align: center; border: 2px solid var(--primary); width: 240px; }
+.overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; }
 button { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
 .btn-blue { background: #3b82f6; color: white; }
 .btn-green { background: #10b981; color: white; }
 .btn-orange { background: #f59e0b; color: white; }
-
-input[type="time"], input[type="number"] { padding: 6px; border: 1px solid #cbd5e1; border-radius: 8px; width: 80px; }
+input { padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 80px; text-align: center; }
 </style>
 </head>
 <body>
@@ -69,62 +60,72 @@ input[type="time"], input[type="number"] { padding: 6px; border: 1px solid #cbd5
     <div id="ac2_ui" class="indicator ind-stop">AC2 OFF</div>
 </div>
 
-<div class="overlay" id="overlay" onclick="closeTempModal()"></div>
-<div id="temp-modal">
-    <h3 style="margin-top:0">Set Temp Limit</h3>
-    <input type="number" id="new-temp-val" value="28">
-    <button class="btn-green" onclick="saveSetTemp()">SAVE & CLOSE</button>
-</div>
-
 <div class="card">
-    <div class="card-header" onclick="toggleCard(0)">Manual Remote <span>▾</span></div>
-    <div class="card-body">
-        <div style="display:flex; gap:10px;">
-            <button class="btn-blue" onclick="manualAction(1)">AC1 TOGGLE</button>
-            <button class="btn-blue" onclick="manualAction(2)">AC2 TOGGLE</button>
-        </div>
+    <div class="card-header" onclick="toggleCard('manual')">
+        Manual Remote <span class="active-label" id="label-manual">Active</span>
+    </div>
+    <div class="card-body" id="body-manual">
+        <button class="btn-blue" onclick="manualAction(1)">AC1 TOGGLE</button>
+        <button class="btn-blue" onclick="manualAction(2)">AC2 TOGGLE</button>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-header" onclick="toggleCard(1)">Interval Mode <span>▾</span></div>
-    <div class="card-body">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span>ON (Min): <input type="number" id="int_on" value="10"></span>
-            <span>OFF (Min): <input type="number" id="int_off" value="10"></span>
-        </div>
-        <button class="btn-orange" onclick="saveInterval()">START INTERVAL MODE</button>
+    <div class="card-header" onclick="toggleCard('interval')">
+        Interval Mode <span class="active-label" id="label-interval">Active</span>
+    </div>
+    <div class="card-body" id="body-interval">
+        ON: <input type="number" id="int_on" value="10"> OFF: <input type="number" id="int_off" value="10">
+        <button class="btn-orange" onclick="saveInterval()">START INTERVAL</button>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-header" onclick="toggleCard(2)">Weekly Schedule <span>▾</span></div>
-    <div class="card-body">
+    <div class="card-header" onclick="toggleCard('weekly')">
+        Weekly Schedule <span class="active-label" id="label-weekly">Active</span>
+    </div>
+    <div class="card-body" id="body-weekly">
         <div id="combinedSlotList"></div>
         <button class="btn-blue" onclick="addCombinedSlot()">+ ADD NEW SLOT</button>
         <button class="btn-green" onclick="saveAllCombined()" style="margin-top:15px;">SAVE TO CLOUD</button>
     </div>
 </div>
 
+<div class="overlay" id="overlay" onclick="closeTempModal()"></div>
+<div id="temp-modal">
+    <h3 style="margin-top:0">Set Temp Limit</h3>
+    <label>Set Temp</label><br><input type="number" id="new-temp-val" step="0.5"><br>
+    <label>Gap</label><br><input type="number" id="new-gap-val" step="0.5"><br>
+    <button class="btn-green" onclick="saveSettings()">SAVE</button>
+</div>
+
 <script>
 const firebaseConfig = { apiKey: "AIzaSyA5WkHV4MTLRtypxV2oCCl2n8d0aUUO85k", databaseURL: "https://weekly-timer-9945b-default-rtdb.firebaseio.com" };
 firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-let slots = [];
-let initialLoadDone = false;
+let slots = []; 
+let firstLoad = true;
+let lastHBTime = Date.now(); 
 let lastHB = -1;
-let lastHBChangeTime = Date.now();
 
-function toggleCard(i){ 
-    const bodies = document.querySelectorAll('.card-body');
-    bodies.forEach((b, idx) => b.style.display = (idx === i ? 'block' : 'none'));
+// Accordian Toggle: Opens only one card at a time
+function toggleCard(id) {
+    const cards = ['manual', 'interval', 'weekly'];
+    cards.forEach(cardId => {
+        const el = document.getElementById('body-' + cardId);
+        if (cardId === id) {
+            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+        } else {
+            el.style.display = 'none';
+        }
+    });
 }
 
-// DATA SYNC
+// 1. REAL-TIME DATA (Temperature & Mode)
 db.ref().on('value', snap => {
     const d = snap.val(); if(!d) return;
 
-    // Temp & Sensor
+	// Temp & Sensor
     if (d.current_temp && d.current_temp > 0) {
         document.getElementById('live-temp').innerText = parseFloat(d.current_temp).toFixed(1);
         document.getElementById('sensor-status').style.display = "none";
@@ -133,110 +134,96 @@ db.ref().on('value', snap => {
         document.getElementById('sensor-status').style.display = "block";
     }
 
-    // Heartbeat Sync
-    let currentHB = d.AC_TEST?.status?.heartbeat || 0;
-    if(currentHB !== lastHB) {
-        lastHB = currentHB;
-        lastHBChangeTime = Date.now();
-    }
 
-    // AC UI Update
+    // તાપમાન રિયલ ટાઇમમાં અપડેટ થશે
+    if(d.current_temp) document.getElementById('live-temp').innerText = parseFloat(d.current_temp).toFixed(1);
+    
+    // મોડ હાઈલાઈટ (Label Right side)
+    const m = d.mode || 'manual';
+    document.querySelectorAll('.active-label').forEach(l => l.classList.remove('show'));
+    if(document.getElementById('label-' + m)) document.getElementById('label-' + m).classList.add('show');
+
+    // રિલે સ્ટેટસ
     document.getElementById('ac1_ui').className = 'indicator ' + (d.ac1_status ? 'ind-run' : 'ind-stop');
     document.getElementById('ac1_ui').innerText = d.ac1_status ? 'AC1 RUN' : 'AC1 OFF';
     document.getElementById('ac2_ui').className = 'indicator ' + (d.ac2_status ? 'ind-run' : 'ind-stop');
     document.getElementById('ac2_ui').innerText = d.ac2_status ? 'AC2 RUN' : 'AC2 OFF';
 
-    // Initial Weekly Data Load
-    if (!initialLoadDone && d.AC_TEST) {
-        let tempSlots = [];
-        const ac1W = d.AC_TEST.AC1?.weekly || {};
-        const ac2W = d.AC_TEST.AC2?.weekly || {};
-        const keys = new Set([...Object.keys(ac1W), ...Object.keys(ac2W)]);
-        keys.forEach(k => {
-            tempSlots.push({
-                id: k,
-                ac1_on: ac1W[k]?.on || '08:00', ac1_off: ac1W[k]?.off || '09:00', ac1_days: ac1W[k]?.days || [0,0,0,0,0,0,0],
-                ac2_on: ac2W[k]?.on || '08:00', ac2_off: ac2W[k]?.off || '09:00', ac2_days: ac2W[k]?.days || [0,0,0,0,0,0,0],
-                show1: !!ac1W[k], show2: !!ac2W[k]
+    // હાર્ટબીટ
+    let hb = d.AC_TEST?.status?.heartbeat || 0;
+    if(hb !== lastHB) { lastHB = hb; lastHBTime = Date.now(); }
+
+    // પહેલીવાર ડેટા લોડ કરો ત્યારે
+    if(firstLoad) {
+        document.getElementById('new-temp-val').value = d.set_temp || 28;
+        document.getElementById('new-gap-val').value = d.temp_gap || 2.0;
+        if(d.AC_TEST) {
+            const ac1W = d.AC_TEST.AC1?.weekly || {};
+            const ac2W = d.AC_TEST.AC2?.weekly || {};
+            const keys = new Set([...Object.keys(ac1W), ...Object.keys(ac2W)]);
+            keys.forEach(k => {
+                slots.push({
+                    id: k,
+                    ac1_on: ac1W[k]?.on || '08:00', ac1_off: ac1W[k]?.off || '09:00', ac1_days: ac1W[k]?.days || [0,0,0,0,0,0,0],
+                    ac2_on: ac2W[k]?.on || '08:00', ac2_off: ac2W[k]?.off || '09:00', ac2_days: ac2W[k]?.days || [0,0,0,0,0,0,0],
+                    show1: !!ac1W[k], show2: !!ac2W[k]
+                });
             });
-        });
-        if(tempSlots.length > 0) { slots = tempSlots; renderSlots(); initialLoadDone = true; }
+            renderSlots();
+        }
+        firstLoad = false;
     }
 });
 
-// ONLINE CHECKER
-setInterval(() => {
-    const statusEl = document.getElementById('online-status');
-    const isOnline = (Date.now() - lastHBChangeTime) < 12000;
-    statusEl.innerText = isOnline ? "● ONLINE" : "● DISCONNECTED";
-    statusEl.style.color = isOnline ? "#10b981" : "#f87171";
-    document.getElementById('live-clock').innerText = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true });
-}, 1000);
-
-// MODAL
-function openTempModal() { document.getElementById('temp-modal').style.display='block'; document.getElementById('overlay').style.display='block'; }
-function closeTempModal() { document.getElementById('temp-modal').style.display='none'; document.getElementById('overlay').style.display='none'; }
-function saveSetTemp() {
-    let v = document.getElementById('new-temp-val').value;
-    db.ref('set_temp').set(parseFloat(v)).then(() => closeTempModal());
-}
-
-// INTERVAL
-function saveInterval() {
-    db.ref().update({ 
-        mode:'interval', 
-        int_on: parseInt(document.getElementById('int_on').value), 
-        int_off: parseInt(document.getElementById('int_off').value) 
-    });
-    alert("Interval Mode Activated");
-}
-
-// WEEKLY
+// 2. WEEKLY LOGIC
 function addCombinedSlot(){
     slots.push({ id:'s'+Date.now(), ac1_days:[0,0,0,0,0,0,0], ac2_days:[0,0,0,0,0,0,0], ac1_on:'08:00', ac1_off:'09:00', ac2_on:'08:00', ac2_off:'09:00', show1:true, show2:true });
     renderSlots();
 }
 function renderSlots(){
     const days = ['M','T','W','T','F','S','S'];
-    document.getElementById('combinedSlotList').innerHTML = slots.map((s, idx) => `
-        <div class="slot">
+    let html = "";
+    slots.forEach((s, idx) => {
+        html += `<div class="slot">
             <b>Slot ${idx+1}</b>
             ${s.show1 ? `<div class="ac-row">
-                <div class="ac-label-row"><b>AC-1</b> <span class="remove-btn" onclick="removeAc(${idx},1)">REMOVE</span></div>
-                <div>${days.map((d,i)=>`<span class="dayBtn ${s.ac1_days[i]?'active':''}" onclick="toggleDay(${idx},1,${i})">${d}</span>`).join('')}</div>
-                <div style="margin-top:8px">ON: <input type="time" value="${s.ac1_on}" onchange="slots[${idx}].ac1_on=this.value"> OFF: <input type="time" value="${s.ac1_off}" onchange="slots[${idx}].ac1_off=this.value"></div>
+                <b>AC1</b> <span onclick="removeAc(${idx},1)" style="color:red;float:right;cursor:pointer">X</span><br>
+                ${days.map((d,i)=>`<span class="dayBtn ${s.ac1_days[i]?'active':''}" onclick="toggleDay(${idx},1,${i})">${d}</span>`).join('')}<br>
+                ON: <input type="time" value="${s.ac1_on}" onchange="slots[${idx}].ac1_on=this.value"> OFF: <input type="time" value="${s.ac1_off}" onchange="slots[${idx}].ac1_off=this.value">
             </div>`:''}
             ${s.show2 ? `<div class="ac-row">
-                <div class="ac-label-row"><b>AC-2</b> <span class="remove-btn" onclick="removeAc(${idx},2)">REMOVE</span></div>
-                <div>${days.map((d,i)=>`<span class="dayBtn ${s.ac2_days[i]?'active':''}" onclick="toggleDay(${idx},2,${i})">${d}</span>`).join('')}</div>
-                <div style="margin-top:8px">ON: <input type="time" value="${s.ac2_on}" onchange="slots[${idx}].ac2_on=this.value"> OFF: <input type="time" value="${s.ac2_off}" onchange="slots[${idx}].ac2_off=this.value"></div>
+                <b>AC2</b> <span onclick="removeAc(${idx},2)" style="color:red;float:right;cursor:pointer">X</span><br>
+                ${days.map((d,i)=>`<span class="dayBtn ${s.ac2_days[i]?'active':''}" onclick="toggleDay(${idx},2,${i})">${d}</span>`).join('')}<br>
+                ON: <input type="time" value="${s.ac2_on}" onchange="slots[${idx}].ac2_on=this.value"> OFF: <input type="time" value="${s.ac2_off}" onchange="slots[${idx}].ac2_off=this.value">
             </div>`:''}
-        </div>`).join('');
+        </div>`;
+    });
+    document.getElementById('combinedSlotList').innerHTML = html;
 }
-function removeAc(si, ac) {
-    if(ac===1) slots[si].show1 = false; else slots[si].show2 = false;
-    if(!slots[si].show1 && !slots[si].show2) slots.splice(si, 1);
-    renderSlots();
-}
-function toggleDay(si, ac, di) {
-    if(ac===1) slots[si].ac1_days[di] = slots[si].ac1_days[di]?0:1;
-    else slots[si].ac2_days[di] = slots[si].ac2_days[di]?0:1;
-    renderSlots();
-}
+function removeAc(si, ac) { if(ac===1) slots[si].show1=false; else slots[si].show2=false; if(!slots[si].show1 && !slots[si].show2) slots.splice(si,1); renderSlots(); }
+function toggleDay(si, ac, di) { if(ac===1) slots[si].ac1_days[di]=slots[si].ac1_days[di]?0:1; else slots[si].ac2_days[di]=slots[si].ac2_days[di]?0:1; renderSlots(); }
 function saveAllCombined(){
     let up = { mode:'weekly' };
-    db.ref('AC_TEST/AC1/weekly').remove();
-    db.ref('AC_TEST/AC2/weekly').remove();
+    db.ref('AC_TEST/AC1/weekly').remove(); db.ref('AC_TEST/AC2/weekly').remove();
     slots.forEach((s, i) => {
         if(s.show1) up[`AC_TEST/AC1/weekly/slot${i+1}`] = {on: s.ac1_on, off: s.ac1_off, days: s.ac1_days};
         if(s.show2) up[`AC_TEST/AC2/weekly/slot${i+1}`] = {on: s.ac2_on, off: s.ac2_off, days: s.ac2_days};
     });
     db.ref().update(up).then(() => alert("Weekly Saved!"));
 }
-function manualAction(ac) {
-    db.ref('mode').set('manual');
-    db.ref(`AC_TEST/AC${ac}/manual_remote`).once('value', s => db.ref(`AC_TEST/AC${ac}/manual_remote`).set(!s.val()));
-}
+
+// 3. OTHERS
+setInterval(() => {
+    const online = (Date.now() - lastHBTime) < 12000;
+    document.getElementById('online-status').innerText = online ? "● ONLINE" : "● DISCONNECTED";
+    document.getElementById('online-status').style.color = online ? "#10b981" : "#f87171";
+    document.getElementById('live-clock').innerText = new Date().toLocaleTimeString();
+}, 1000);
+function manualAction(ac) { db.ref('mode').set('manual'); db.ref(`AC_TEST/AC${ac}/manual_remote`).once('value', s => db.ref(`AC_TEST/AC${ac}/manual_remote`).set(!s.val())); }
+function saveInterval() { db.ref().update({ mode:'interval', int_on: parseInt(document.getElementById('int_on').value), int_off: parseInt(document.getElementById('int_off').value) }); }
+function openTempModal() { document.getElementById('temp-modal').style.display='block'; document.getElementById('overlay').style.display='block'; }
+function closeTempModal() { document.getElementById('temp-modal').style.display='none'; document.getElementById('overlay').style.display='none'; }
+function saveSettings() { db.ref().update({ set_temp: parseFloat(document.getElementById('new-temp-val').value), temp_gap: parseFloat(document.getElementById('new-gap-val').value) }).then(() => closeTempModal()); }
 </script>
 </body>
 </html>
