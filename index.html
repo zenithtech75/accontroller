@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8"/><title>AC Pro V6.3 - Fully Fixed</title>
+<meta charset="utf-8"/><title>Smart Controller V2</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
@@ -17,29 +17,38 @@ body{ font-family: 'Segoe UI', sans-serif; background: var(--bg); margin:0; padd
 .indicator { padding: 8px 5px; border-radius: 10px; font-size: 11px; font-weight: bold; width: 65px; text-align: center; border: 1px solid rgba(255,255,255,0.3); }
 .ind-run { background: #065f46; color: #a7f3d0; border-color: #34d399; }
 .ind-stop { background: #991b1b; color: #fecaca; border-color: #f87171; }
+.ind-offline { background: #475569; color: #cbd5e1; border-color: #94a3b8; }
 
 #sensor-status { color: #ff4444; font-size: 12px; font-weight: bold; display: none; text-align: center; background: #ffebeb; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ffcccc; }
 
 .card { background:var(--card); border-radius:12px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; overflow:hidden; }
-.card-header { padding:12px 15px; font-weight:bold; cursor:pointer; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; }
+.card-header { padding:12px 15px; font-weight:bold; cursor:pointer; background: #f8fafc; display: flex; justify-content: space-between; }
 .card-body { display:none; padding:15px; border-top:1px solid #eee; }
 
-/* Active Label Right Side */
 .active-label { background: var(--ok); color: white; font-size: 10px; padding: 2px 8px; border-radius: 4px; visibility: hidden; }
 .active-label.show { visibility: visible; }
 
+.row-flex { display: flex; gap: 10px; align-items: center; }
+.row-flex button { flex: 1; margin-top: 0; }
+
 .slot { background:#f1f5f9; border:1px solid #e2e8f0; padding:12px; border-radius:12px; margin-bottom:10px; }
-.ac-row { background: white; padding: 8px; border-radius: 8px; margin-top: 5px; border: 1px solid #ddd; }
+.ac-row { background: white; padding: 10px; border-radius: 8px; margin-top: 5px; border: 1px solid #ddd; }
+
+/* Weekly Time Left Aligned */
+.time-container { display: flex; justify-content: flex-start; align-items: center; margin-top: 8px; gap: 15px; }
+.time-container span { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: bold; }
+.time-container input { width: 85px !important; }
+
 .dayBtn { padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 10px; margin-right: 2px; cursor: pointer; background: white; display: inline-block; margin-top: 5px; }
 .dayBtn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
 #temp-modal { display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index: 1000; text-align: center; border: 2px solid var(--primary); width: 240px; }
 .overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; }
-button { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+button { padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
 .btn-blue { background: #3b82f6; color: white; }
 .btn-green { background: #10b981; color: white; }
-.btn-orange { background: #f59e0b; color: white; }
-input { padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 80px; text-align: center; }
+.btn-orange { background: #f59e0b; color: white; width: 100%; margin-top: 10px; }
+input { padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 60px; text-align: center; }
 </style>
 </head>
 <body>
@@ -52,12 +61,12 @@ input { padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 80px; t
 <div id="sensor-status">⚠ SENSOR ERROR: CHECK CONNECTION</div>
 
 <div class="main-display">
-    <div id="ac1_ui" class="indicator ind-stop">AC1 OFF</div>
+    <div id="ac1_ui" class="indicator ind-offline">---</div>
     <div class="temp-center" onclick="openTempModal()">
         <span class="temp-text" id="live-temp">--</span>
         <span class="temp-unit">Room Temp (°C)</span>
     </div>
-    <div id="ac2_ui" class="indicator ind-stop">AC2 OFF</div>
+    <div id="ac2_ui" class="indicator ind-offline">---</div>
 </div>
 
 <div class="card">
@@ -65,8 +74,10 @@ input { padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 80px; t
         Manual Remote <span class="active-label" id="label-manual">Active</span>
     </div>
     <div class="card-body" id="body-manual">
-        <button class="btn-blue" onclick="manualAction(1)">AC1 TOGGLE</button>
-        <button class="btn-blue" onclick="manualAction(2)">AC2 TOGGLE</button>
+        <div class="row-flex">
+            <button class="btn-blue" onclick="manualAction(1)">AC1 TOGGLE</button>
+            <button class="btn-blue" onclick="manualAction(2)">AC2 TOGGLE</button>
+        </div>
     </div>
 </div>
 
@@ -75,7 +86,10 @@ input { padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 80px; t
         Interval Mode <span class="active-label" id="label-interval">Active</span>
     </div>
     <div class="card-body" id="body-interval">
-        ON: <input type="number" id="int_on" value="10"> OFF: <input type="number" id="int_off" value="10">
+        <div class="row-flex" style="justify-content: center;">
+            <span>ON: <input type="number" id="int_on"></span>
+            <span>OFF: <input type="number" id="int_off"></span>
+        </div>
         <button class="btn-orange" onclick="saveInterval()">START INTERVAL</button>
     </div>
 </div>
@@ -86,17 +100,19 @@ input { padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 80px; t
     </div>
     <div class="card-body" id="body-weekly">
         <div id="combinedSlotList"></div>
-        <button class="btn-blue" onclick="addCombinedSlot()">+ ADD NEW SLOT</button>
-        <button class="btn-green" onclick="saveAllCombined()" style="margin-top:15px;">SAVE TO CLOUD</button>
+        <div class="row-flex" style="margin-top:15px;">
+            <button class="btn-blue" onclick="addCombinedSlot()">+ ADD SLOT</button>
+            <button class="btn-green" onclick="saveAllCombined()">SAVE CLOUD</button>
+        </div>
     </div>
 </div>
 
 <div class="overlay" id="overlay" onclick="closeTempModal()"></div>
 <div id="temp-modal">
     <h3 style="margin-top:0">Set Temp Limit</h3>
-    <label>Set Temp</label><br><input type="number" id="new-temp-val" step="0.5"><br>
-    <label>Gap</label><br><input type="number" id="new-gap-val" step="0.5"><br>
-    <button class="btn-green" onclick="saveSettings()">SAVE</button>
+    <label>Set Temp</label><br><input type="number" id="new-temp-val" step="1"><br>
+    <label>Gap</label><br><input type="number" id="new-gap-val" step="1"><br>
+    <button class="btn-green" onclick="saveSettings()" style="width:100%; margin-top:15px;">Save & Close</button>
 </div>
 
 <script>
@@ -108,24 +124,17 @@ let firstLoad = true;
 let lastHBTime = Date.now(); 
 let lastHB = -1;
 
-// Accordian Toggle: Opens only one card at a time
 function toggleCard(id) {
     const cards = ['manual', 'interval', 'weekly'];
     cards.forEach(cardId => {
         const el = document.getElementById('body-' + cardId);
-        if (cardId === id) {
-            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-        } else {
-            el.style.display = 'none';
-        }
+        el.style.display = (cardId === id && el.style.display !== 'block') ? 'block' : 'none';
     });
 }
 
-// 1. REAL-TIME DATA (Temperature & Mode)
 db.ref().on('value', snap => {
     const d = snap.val(); if(!d) return;
 
-	// Temp & Sensor
     if (d.current_temp && d.current_temp > 0) {
         document.getElementById('live-temp').innerText = parseFloat(d.current_temp).toFixed(1);
         document.getElementById('sensor-status').style.display = "none";
@@ -134,29 +143,25 @@ db.ref().on('value', snap => {
         document.getElementById('sensor-status').style.display = "block";
     }
 
-
-    // તાપમાન રિયલ ટાઇમમાં અપડેટ થશે
-    if(d.current_temp) document.getElementById('live-temp').innerText = parseFloat(d.current_temp).toFixed(1);
-    
-    // મોડ હાઈલાઈટ (Label Right side)
     const m = d.mode || 'manual';
     document.querySelectorAll('.active-label').forEach(l => l.classList.remove('show'));
     if(document.getElementById('label-' + m)) document.getElementById('label-' + m).classList.add('show');
 
-    // રિલે સ્ટેટસ
     document.getElementById('ac1_ui').className = 'indicator ' + (d.ac1_status ? 'ind-run' : 'ind-stop');
     document.getElementById('ac1_ui').innerText = d.ac1_status ? 'AC1 RUN' : 'AC1 OFF';
     document.getElementById('ac2_ui').className = 'indicator ' + (d.ac2_status ? 'ind-run' : 'ind-stop');
     document.getElementById('ac2_ui').innerText = d.ac2_status ? 'AC2 RUN' : 'AC2 OFF';
 
-    // હાર્ટબીટ
     let hb = d.AC_TEST?.status?.heartbeat || 0;
     if(hb !== lastHB) { lastHB = hb; lastHBTime = Date.now(); }
 
-    // પહેલીવાર ડેટા લોડ કરો ત્યારે
     if(firstLoad) {
+        // Firebase માંથી Interval અને તાપમાનની વિગતો લોડ કરવી
         document.getElementById('new-temp-val').value = d.set_temp || 28;
         document.getElementById('new-gap-val').value = d.temp_gap || 2.0;
+        document.getElementById('int_on').value = d.int_on || 60;
+        document.getElementById('int_off').value = d.int_off || 60;
+
         if(d.AC_TEST) {
             const ac1W = d.AC_TEST.AC1?.weekly || {};
             const ac2W = d.AC_TEST.AC2?.weekly || {};
@@ -175,11 +180,11 @@ db.ref().on('value', snap => {
     }
 });
 
-// 2. WEEKLY LOGIC
 function addCombinedSlot(){
     slots.push({ id:'s'+Date.now(), ac1_days:[0,0,0,0,0,0,0], ac2_days:[0,0,0,0,0,0,0], ac1_on:'08:00', ac1_off:'09:00', ac2_on:'08:00', ac2_off:'09:00', show1:true, show2:true });
     renderSlots();
 }
+
 function renderSlots(){
     const days = ['M','T','W','T','F','S','S'];
     let html = "";
@@ -187,19 +192,26 @@ function renderSlots(){
         html += `<div class="slot">
             <b>Slot ${idx+1}</b>
             ${s.show1 ? `<div class="ac-row">
-                <b>AC1</b> <span onclick="removeAc(${idx},1)" style="color:red;float:right;cursor:pointer">X</span><br>
-                ${days.map((d,i)=>`<span class="dayBtn ${s.ac1_days[i]?'active':''}" onclick="toggleDay(${idx},1,${i})">${d}</span>`).join('')}<br>
-                ON: <input type="time" value="${s.ac1_on}" onchange="slots[${idx}].ac1_on=this.value"> OFF: <input type="time" value="${s.ac1_off}" onchange="slots[${idx}].ac1_off=this.value">
+                <b>AC1</b> <span onclick="removeAc(${idx},1)" style="color:red;float:right;cursor:pointer">REMOVE</span><br>
+                ${days.map((d,i)=>`<span class="dayBtn ${s.ac1_days[i]?'active':''}" onclick="toggleDay(${idx},1,${i})">${d}</span>`).join('')}
+                <div class="time-container">
+                    <span>ON: <input type="time" value="${s.ac1_on}" onchange="slots[${idx}].ac1_on=this.value"></span>
+                    <span>OFF: <input type="time" value="${s.ac1_off}" onchange="slots[${idx}].ac1_off=this.value"></span>
+                </div>
             </div>`:''}
             ${s.show2 ? `<div class="ac-row">
-                <b>AC2</b> <span onclick="removeAc(${idx},2)" style="color:red;float:right;cursor:pointer">X</span><br>
-                ${days.map((d,i)=>`<span class="dayBtn ${s.ac2_days[i]?'active':''}" onclick="toggleDay(${idx},2,${i})">${d}</span>`).join('')}<br>
-                ON: <input type="time" value="${s.ac2_on}" onchange="slots[${idx}].ac2_on=this.value"> OFF: <input type="time" value="${s.ac2_off}" onchange="slots[${idx}].ac2_off=this.value">
+                <b>AC2</b> <span onclick="removeAc(${idx},2)" style="color:red;float:right;cursor:pointer">REMOVE</span><br>
+                ${days.map((d,i)=>`<span class="dayBtn ${s.ac2_days[i]?'active':''}" onclick="toggleDay(${idx},2,${i})">${d}</span>`).join('')}
+                <div class="time-container">
+                    <span>ON: <input type="time" value="${s.ac2_on}" onchange="slots[${idx}].ac2_on=this.value"></span>
+                    <span>OFF: <input type="time" value="${s.ac2_off}" onchange="slots[${idx}].ac2_off=this.value"></span>
+                </div>
             </div>`:''}
         </div>`;
     });
     document.getElementById('combinedSlotList').innerHTML = html;
 }
+
 function removeAc(si, ac) { if(ac===1) slots[si].show1=false; else slots[si].show2=false; if(!slots[si].show1 && !slots[si].show2) slots.splice(si,1); renderSlots(); }
 function toggleDay(si, ac, di) { if(ac===1) slots[si].ac1_days[di]=slots[si].ac1_days[di]?0:1; else slots[si].ac2_days[di]=slots[si].ac2_days[di]?0:1; renderSlots(); }
 function saveAllCombined(){
@@ -212,13 +224,18 @@ function saveAllCombined(){
     db.ref().update(up).then(() => alert("Weekly Saved!"));
 }
 
-// 3. OTHERS
 setInterval(() => {
-    const online = (Date.now() - lastHBTime) < 12000;
+    const online = (Date.now() - lastHBTime) < 5000;
     document.getElementById('online-status').innerText = online ? "● ONLINE" : "● DISCONNECTED";
     document.getElementById('online-status').style.color = online ? "#10b981" : "#f87171";
-    document.getElementById('live-clock').innerText = new Date().toLocaleTimeString();
+    if (!online) {
+        document.getElementById('live-temp').innerText = "--";
+        document.getElementById('ac1_ui').innerText = "---"; document.getElementById('ac1_ui').className = "indicator ind-offline";
+        document.getElementById('ac2_ui').innerText = "---"; document.getElementById('ac2_ui').className = "indicator ind-offline";
+    }
+    document.getElementById('live-clock').innerText = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true }).toUpperCase();
 }, 1000);
+
 function manualAction(ac) { db.ref('mode').set('manual'); db.ref(`AC_TEST/AC${ac}/manual_remote`).once('value', s => db.ref(`AC_TEST/AC${ac}/manual_remote`).set(!s.val())); }
 function saveInterval() { db.ref().update({ mode:'interval', int_on: parseInt(document.getElementById('int_on').value), int_off: parseInt(document.getElementById('int_off').value) }); }
 function openTempModal() { document.getElementById('temp-modal').style.display='block'; document.getElementById('overlay').style.display='block'; }
