@@ -19,6 +19,10 @@ body{ font-family: 'Segoe UI', sans-serif; background: var(--bg); margin:0; padd
 .ind-stop { background: #991b1b; color: #fecaca; border-color: #f87171; }
 .ind-offline { background: #475569; color: #cbd5e1; border-color: #94a3b8; }
 
+.footer {
+    align: "bottom";
+    
+}    
 #sensor-status { color: #ff4444; font-size: 12px; font-weight: bold; display: none; text-align: center; background: #ffebeb; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ffcccc; }
 
 .card { background:var(--card); border-radius:12px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; overflow:hidden; }
@@ -242,6 +246,6 @@ function openTempModal() { document.getElementById('temp-modal').style.display='
 function closeTempModal() { document.getElementById('temp-modal').style.display='none'; document.getElementById('overlay').style.display='none'; }
 function saveSettings() { db.ref().update({ set_temp: parseFloat(document.getElementById('new-temp-val').value), temp_gap: parseFloat(document.getElementById('new-gap-val').value) }).then(() => closeTempModal()); }
 </script>
-    <footer>V1.01</footer>
+    <footer><div class="footer">V1.01</footer>
 </body>
 </html>
